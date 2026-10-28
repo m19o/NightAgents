@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "unsupported_claims",
+    "alternative_explanations"
+  ],
+  "properties": {
+    "unsupported_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "alternative_explanations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fundamentally_supported": {
+      "type": "boolean",
+      "description": "Overall verdict on the assessment. Set false ONLY when the assessment is built on fabricated or contradicted evidence. Minor nitpicks belong in unsupported_claims without changing this verdict."
+    }
+  },
+  "additionalProperties": false
+}

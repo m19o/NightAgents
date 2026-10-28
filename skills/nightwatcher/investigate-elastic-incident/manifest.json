@@ -1,0 +1,83 @@
+{
+  "skill_id": "investigate-elastic-incident",
+  "version": 1,
+  "agent": "nightwatcher",
+  "tools": [
+    "elastic.get_source_health",
+    "elastic.get_incident",
+    "elastic.run_catalog_query",
+    "mythic.list_callbacks",
+    "mythic.verify_callback_route"
+  ],
+  "maximum_tool_calls": 20,
+  "maximum_context_tokens": 64000,
+  "evaluation_ids": [
+    "missing-source",
+    "correlated-incident"
+  ],
+  "status": "active",
+  "phases": [
+    {
+      "node": "source_health",
+      "kind": "tool",
+      "tool": "elastic.get_source_health",
+      "arguments": {
+        "source_ids": "${required_sources}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "elastic_incident",
+      "kind": "tool",
+      "tool": "elastic.get_incident",
+      "arguments": {
+        "alert_id": "${external_alert_id}",
+        "engagement_id": "${engagement_id}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "elastic_evidence",
+      "kind": "tool",
+      "tool": "elastic.run_catalog_query",
+      "arguments": {
+        "query_id": "incident-evidence-v1",
+        "parameters": {
+          "engagement_id": "${engagement_id}",
+          "redirector_id": "${redirector_id}",
+          "lookback_seconds": 3600,
+          "size": 100
+        }
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "callback_inventory",
+      "kind": "tool",
+      "tool": "mythic.list_callbacks",
+      "arguments": {
+        "engagement_id": "${engagement_name}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "verification",
+      "kind": "model",
+      "model_role": "evidence_verifier",
+      "context_keys": [
+        "source_health",
+        "elastic_incident",
+        "elastic_evidence",
+        "callback_inventory"
+      ],
+      "output_schema": "evidence-verifier-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    }
+  ],
+  "deadline_seconds": 600
+}

@@ -1,0 +1,8 @@
+NightAgents - agentic infrastructure watchdog for red team operations
+Copyright 2026 Mohamed AbuMuslim (m19o)
+
+This product includes software developed by Mohamed AbuMuslim (m19o)
+(https://github.com/m19o/nightagents).
+
+Portions of the Cloudflare infrastructure adapter and the hunting playbook
+were ported from the NightCTL control plane by the same author.

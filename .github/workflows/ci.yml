@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Ruff
+        run: ruff check src tests
+
+      - name: Tests
+        run: python -m pytest tests -q --disable-warnings
+
+      - name: Replay evaluation gate
+        run: bash scripts/ci-evaluation-gate.sh
+
+      - name: Alembic clean-database upgrade
+        run: |
+          export NIGHTAGENTS_DATABASE_URL="sqlite:////tmp/nightagents-ci.db"
+          alembic upgrade head
+
+      - name: Docker Compose renders
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env config --quiet

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NightAgents - live operations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  body { background: #0d1117; color: #c9d1d9; font: 14px/1.5 -apple-system, "Segoe UI", Roboto, monospace; margin: 0; padding: 24px; }
+  h1 { font-size: 18px; color: #f0f6fc; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #8b949e; margin: 24px 0 8px; }
+  .sub { color: #8b949e; font-size: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; }
+  .card .num { font-size: 26px; font-weight: 700; color: #f0f6fc; }
+  .ok { color: #3fb950; } .warn { color: #d29922; } .bad { color: #f85149; }
+  table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #21262d; font-size: 13px; }
+  th { color: #8b949e; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .sev-high, .sev-critical { color: #f85149; font-weight: 600; }
+  .sev-medium { color: #d29922; } .sev-low { color: #3fb950; }
+  .state-completed { color: #3fb950; } .state-rolled_back, .state-failed_safe { color: #d29922; }
+  #tokenbar { margin-top: 12px; display: none; }
+  input { background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; padding: 6px 10px; width: 320px; }
+  button { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>NightAgents <span class="sub">live operations - auto refresh 5s</span></h1>
+<div class="sub" id="status">connecting...</div>
+<div id="tokenbar">
+  <input id="token" type="password" placeholder="operator bearer token">
+  <button onclick="saveToken()">save</button>
+</div>
+
+<div class="grid" id="cards"></div>
+
+<h2>Open incidents</h2>
+<table><thead><tr><th>received</th><th>severity</th><th>rule</th><th>status</th><th>summary</th></tr></thead><tbody id="incidents"></tbody></table>
+
+<h2>Handoffs awaiting decision</h2>
+<table><thead><tr><th>handoff</th><th>status</th><th>expires</th></tr></thead><tbody id="handoffs"></tbody></table>
+
+<h2>Recent executions</h2>
+<table><thead><tr><th>finished</th><th>state</th><th>handoff</th></tr></thead><tbody id="executions"></tbody></table>
+
+<script>
+const statusEl = document.getElementById('status');
+function token() { return localStorage.getItem('nightagents_token') || ''; }
+function saveToken() { localStorage.setItem('nightagents_token', document.getElementById('token').value); refresh(); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function short(id) { return id ? id.slice(0, 13) + '...' : '-'; }
+function ago(ts) { if (!ts) return '-'; const s = Math.max(0, (Date.now() - new Date(ts)) / 1000);
+  if (s < 60) return Math.floor(s) + 's ago'; if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago'; return Math.floor(s/86400) + 'd ago'; }
+
+async function refresh() {
+  try {
+    const headers = token() ? { 'Authorization': 'Bearer ' + token() } : {};
+    const resp = await fetch('/api/v2/dashboard/live', { headers });
+    if (resp.status === 401) { document.getElementById('tokenbar').style.display = 'block';
+      statusEl.textContent = 'operator token required'; return; }
+    document.getElementById('tokenbar').style.display = 'none';
+    const d = await resp.json();
+    const auditOk = d.summary.audit && d.summary.audit.valid;
+    statusEl.innerHTML = 'updated ' + new Date().toLocaleTimeString() +
+      ' - audit chain <span class="' + (auditOk ? 'ok' : 'bad') + '">' + (auditOk ? 'intact' : 'BROKEN') + '</span>';
+    const cards = [
+      ['open incidents', d.summary.incidents_open, d.summary.incidents_open ? 'warn' : 'ok'],
+      ['active agent runs', d.summary.agent_runs_active, 'ok'],
+      ['executions observing', d.summary.executions_observing, d.summary.executions_observing ? 'warn' : 'ok'],
+      ['outbox pending', d.summary.outbox_pending, 'ok'],
+      ['knowledge quarantined', d.summary.knowledge_quarantined, d.summary.knowledge_quarantined ? 'warn' : 'ok'],
+      ['pending handoffs', d.handoffs.length, d.handoffs.length ? 'warn' : 'ok'],
+    ];
+    document.getElementById('cards').innerHTML = cards.map(c =>
+      '<div class="card"><div class="num ' + c[2] + '">' + c[1] + '</div><div class="sub">' + c[0] + '</div></div>').join('');
+    document.getElementById('incidents').innerHTML = d.incidents.map(i =>
+      '<tr><td>' + ago(i.received_at) + '</td><td class="sev-' + esc(i.severity) + '">' + esc(i.severity) +
+      '</td><td>' + esc(i.rule_id) + '</td><td>' + esc(i.status) + '</td><td>' + esc((i.summary || '').slice(0, 120)) + '</td></tr>').join('') ||
+      '<tr><td colspan="5" class="sub">none</td></tr>';
+    document.getElementById('handoffs').innerHTML = d.handoffs.map(h =>
+      '<tr><td>' + short(h.id) + '</td><td>' + esc(h.status) + '</td><td>' + ago(h.expires_at) + '</td></tr>').join('') ||
+      '<tr><td colspan="3" class="sub">none - the platform will not move without an operator</td></tr>';
+    document.getElementById('executions').innerHTML = d.executions.map(e =>
+      '<tr><td>' + ago(e.finished_at) + '</td><td class="state-' + esc(e.state) + '">' + esc(e.state) +
+      '</td><td>' + short(e.handoff_id) + '</td></tr>').join('') || '<tr><td colspan="3" class="sub">none yet</td></tr>';
+  } catch (err) { statusEl.textContent = 'api unreachable: ' + err; }
+}
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>

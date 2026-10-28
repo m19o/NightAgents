@@ -1,0 +1,54 @@
+{
+  "skill_id": "verify-callback-continuity",
+  "version": 1,
+  "agent": "nightrouter",
+  "tools": [
+    "infrastructure.verify_callback_route",
+    "infrastructure.route_health"
+  ],
+  "maximum_tool_calls": 10,
+  "maximum_context_tokens": 6000,
+  "evaluation_ids": [
+    "delayed-checkin",
+    "missing-callback"
+  ],
+  "status": "active",
+  "phases": [
+    {
+      "node": "callback_verification",
+      "kind": "tool",
+      "tool": "infrastructure.verify_callback_route",
+      "arguments": {
+        "engagement_id": "${engagement_name}",
+        "route_id": "${route_id}",
+        "callback_ids": "${callback_ids}"
+      },
+      "maximum_attempts": 3,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "route_health",
+      "kind": "tool",
+      "tool": "infrastructure.route_health",
+      "arguments": {
+        "engagement_id": "${engagement_id}",
+        "redirector_id": "${route_id}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "continuity_assessment",
+      "kind": "model",
+      "model_role": "evidence_verifier",
+      "context_keys": [
+        "callback_verification",
+        "route_health"
+      ],
+      "output_schema": "evidence-verifier-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    }
+  ],
+  "deadline_seconds": 600
+}

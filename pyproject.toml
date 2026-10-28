@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nightagents"
+version = "1.0.0rc1"
+description = "Agentic infrastructure watchdog for red team operations: AI agents monitor your redirectors, a deterministic Safety Kernel moves traffic"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Mohamed AbuMuslim (m19o)" }]
+keywords = ["red-team", "redirectors", "agentic", "mcp", "c2", "infrastructure"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+
+dependencies = [
+    "alembic>=1.14,<2",
+    "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
+    "jsonschema>=4.23,<5",
+    "mcp>=1.25,<2",
+    "pydantic>=2.10,<3",
+    "pydantic-settings>=2.7,<3",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn>=0.34,<1",
+    "websockets>=13,<17",
+]
+
+[project.urls]
+Homepage = "https://github.com/m19o/nightagents"
+Repository = "https://github.com/m19o/nightagents"
+Issues = "https://github.com/m19o/nightagents/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=9,<10", "pytest-asyncio>=1,<2", "ruff>=0.15,<1"]
+postgres = ["psycopg[binary]>=3.2,<4"]
+
+[project.scripts]
+nightagents-mythic-mcp = "nightagents.mcp_servers.mythic.server:main"
+nightagents-elastic-mcp = "nightagents.mcp_servers.elastic.server:main"
+nightagents-memory-mcp = "nightagents.mcp_servers.memory.server:main"
+nightagents-infrastructure-mcp = "nightagents.mcp_servers.infrastructure.server:main"
+nightagents-third-party-mcp = "nightagents.mcp_servers.third_party.server:main"
+nightagents-api = "nightagents.api.main:run"
+nightagents-worker = "nightagents.workers.main:main"
+nightagents = "nightagents.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nightagents"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]

@@ -1,0 +1,73 @@
+{
+  "skill_id": "hunt-redirector-telemetry",
+  "version": 1,
+  "agent": "nightwatcher",
+  "tools": [
+    "elastic.get_source_health",
+    "elastic.list_query_catalog",
+    "elastic.run_hunt_queries"
+  ],
+  "maximum_tool_calls": 6,
+  "maximum_context_tokens": 64000,
+  "evaluation_ids": [],
+  "status": "active",
+  "phases": [
+    {
+      "node": "source_health",
+      "kind": "tool",
+      "tool": "elastic.get_source_health",
+      "arguments": {
+        "source_ids": "${required_sources}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "query_catalog",
+      "kind": "tool",
+      "tool": "elastic.list_query_catalog",
+      "arguments": {},
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "hunt_plan",
+      "kind": "model",
+      "model_role": "reasoner",
+      "context_keys": [
+        "source_health",
+        "query_catalog",
+        "playbook"
+      ],
+      "output_schema": "hunt-plan-v1",
+      "timeout_seconds": 90,
+      "maximum_attempts": 2
+    },
+    {
+      "node": "hunt_results",
+      "kind": "tool",
+      "tool": "elastic.run_hunt_queries",
+      "arguments": {
+        "queries": "${hunt_plan.queries}",
+        "engagement_id": "${engagement_id}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 120
+    },
+    {
+      "node": "correlation",
+      "kind": "model",
+      "model_role": "reasoner",
+      "context_keys": [
+        "source_health",
+        "hunt_plan",
+        "hunt_results",
+        "playbook"
+      ],
+      "output_schema": "hunt-correlator-v1",
+      "timeout_seconds": 90,
+      "maximum_attempts": 2
+    }
+  ],
+  "deadline_seconds": 600
+}

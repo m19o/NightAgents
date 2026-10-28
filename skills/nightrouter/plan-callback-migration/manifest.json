@@ -1,0 +1,69 @@
+{
+  "skill_id": "plan-callback-migration",
+  "version": 1,
+  "agent": "nightrouter",
+  "tools": [
+    "mythic.list_callbacks",
+    "mythic.verify_callback_route",
+    "mythic.plan_callback_migration",
+    "infrastructure.route_health",
+    "infrastructure.plan_route_switch"
+  ],
+  "maximum_tool_calls": 15,
+  "maximum_context_tokens": 8000,
+  "evaluation_ids": [
+    "healthy-failover",
+    "state-drift"
+  ],
+  "status": "active",
+  "phases": [
+    {
+      "node": "callback_inventory",
+      "kind": "tool",
+      "tool": "mythic.list_callbacks",
+      "arguments": {
+        "engagement_id": "${engagement_name}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "replacement_health",
+      "kind": "tool",
+      "tool": "infrastructure.route_health",
+      "arguments": {
+        "engagement_id": "${engagement_id}",
+        "redirector_id": "${new_redirector_id}"
+      },
+      "maximum_attempts": 2,
+      "timeout_seconds": 60
+    },
+    {
+      "node": "plan",
+      "kind": "tool",
+      "tool": "infrastructure.plan_route_switch",
+      "arguments": {
+        "engagement_id": "${engagement_id}",
+        "logical_route_id": "${logical_route_id}",
+        "old_redirector_id": "${old_redirector_id}",
+        "new_redirector_id": "${new_redirector_id}"
+      },
+      "timeout_seconds": 60
+    },
+    {
+      "node": "safety_review",
+      "kind": "model",
+      "model_role": "router_planner",
+      "context_keys": [
+        "handoff",
+        "callback_inventory",
+        "replacement_health",
+        "plan"
+      ],
+      "output_schema": "router-review-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    }
+  ],
+  "deadline_seconds": 600
+}

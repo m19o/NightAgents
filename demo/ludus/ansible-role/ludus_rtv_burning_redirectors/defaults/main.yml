@@ -1,0 +1,37 @@
+# NightAgents tactic role - defaults (override per squad in role_vars)
+
+# Repo to deploy (the tactic package, NOT the full project)
+ludus_rtv_burning_redirectors_repo_url: "https://github.com/m19o/nightagents.git"
+ludus_rtv_burning_redirectors_repo_dir: "/opt/nightagents"
+ludus_rtv_burning_redirectors_repo_version: "main"
+
+# Squad identity (used in logs/cron comments)
+ludus_rtv_burning_redirectors_squad: "squad-01"
+
+# Model roles: cloud (OpenAI) keeps the lab VM light; swap for a local
+# OpenAI-compatible endpoint if preferred
+ludus_rtv_burning_redirectors_model_api_url: "https://api.openai.com/v1"
+ludus_rtv_burning_redirectors_model_api_key: ""          # REQUIRED
+ludus_rtv_burning_redirectors_model_name: "gpt-4o-mini"
+
+# Squad Slack (see demo/GUIDE.md section 5)
+ludus_rtv_burning_redirectors_slack_bot_token: ""        # REQUIRED (xoxb-...)
+ludus_rtv_burning_redirectors_slack_signing_secret: ""   # REQUIRED (app signing secret)
+ludus_rtv_burning_redirectors_slack_app_token: ""        # RECOMMENDED (xapp-..., Socket Mode:
+                                                         # approvals work with no public URL)
+ludus_rtv_burning_redirectors_slack_channel: ""          # REQUIRED (channel id, or user id for DM)
+
+# Mythic C2 endpoint (shared Mythic VM or in-VM install)
+ludus_rtv_burning_redirectors_mythic_url: "https://mythic:7443"
+ludus_rtv_burning_redirectors_mythic_verify_tls: "false"
+
+# Lab behavior
+ludus_rtv_burning_redirectors_detection_interval: 120
+ludus_rtv_burning_redirectors_handoff_ttl_minutes: 60
+ludus_rtv_burning_redirectors_swap_gb: 4
+ludus_rtv_burning_redirectors_infra_mode: "lab"
+ludus_rtv_burning_redirectors_lab_victim_container: "victim"
+ludus_rtv_burning_redirectors_lab_hostname: "redirector-pass.demo"
+ludus_rtv_burning_redirectors_lab_redirector_map:
+  demo-redirector-burned: "redirector-pass"
+  demo-redirector-standby: "redirector-filter"

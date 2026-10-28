@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["possible_conflicts", "requires_human_review"],
+  "properties": {
+    "possible_conflicts": {"type": "array", "items": {"type": "string"}},
+    "requires_human_review": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,59 @@
+# Burning Redirectors Before Blue Team Does - Ludus range definition.
+# One lab VM per squad of 4-5 attendees + one shared Mythic VM to save RAM.
+# Scale by copying the squad block: squad-01..squad-N.
+# Field names follow the conventions used by badsectorlabs RTV roles.
+
+ludus:
+  # ---- shared red side: one Mythic C2 for all squads (RAM saver) ----
+  - vm_name: "{{ range_id }}-mythic"
+    hostname: "{{ range_id }}-mythic"
+    template: debian-12-x64-server-template
+    vlan: 50
+    ip_last_octet: 10
+    ram_gb: 8
+    cpus: 4
+    # Mythic (mythic-cli) with poseidon agent + http C2 profile on port 80.
+    # One operation per squad ("Operation Chimera squad-01" ...) so callback
+    # inventories stay isolated per squad.
+
+  # ---- per-squad lab VM: NightAgents stack + redirector fleet + victim ----
+  - vm_name: "{{ range_id }}-squad-01-lab"
+    hostname: "{{ range_id }}-squad-01-lab"
+    template: debian-12-x64-server-template
+    vlan: 51
+    ip_last_octet: 10
+    ram_gb: 8
+    cpus: 4
+    roles:
+      - ludus_rtv_burning_redirectors
+    role_vars:
+      ludus_rtv_burning_redirectors_squad: "squad-01"
+      ludus_rtv_burning_redirectors_mythic_url: "https://10.50.50.10:7443"
+      # secrets per squad (keep the range config private or use env lookups):
+      ludus_rtv_burning_redirectors_model_api_key: "{{ lookup('env','RTV_OPENAI_KEY') }}"
+      ludus_rtv_burning_redirectors_slack_bot_token: "{{ lookup('env','RTV_SLACK_BOT') }}"
+      ludus_rtv_burning_redirectors_slack_signing_secret: "{{ lookup('env','RTV_SLACK_SECRET') }}"
+      ludus_rtv_burning_redirectors_slack_app_token: "{{ lookup('env','RTV_SLACK_APP') }}"
+      ludus_rtv_burning_redirectors_slack_channel: "C0ABCDE123"
+
+  - vm_name: "{{ range_id }}-squad-02-lab"
+    hostname: "{{ range_id }}-squad-02-lab"
+    template: debian-12-x64-server-template
+    vlan: 52
+    ip_last_octet: 10
+    ram_gb: 8
+    cpus: 4
+    roles:
+      - ludus_rtv_burning_redirectors
+    role_vars:
+      ludus_rtv_burning_redirectors_squad: "squad-02"
+      ludus_rtv_burning_redirectors_mythic_url: "https://10.50.50.10:7443"
+      ludus_rtv_burning_redirectors_model_api_key: "{{ lookup('env','RTV_OPENAI_KEY') }}"
+      ludus_rtv_burning_redirectors_slack_bot_token: "{{ lookup('env','RTV_SLACK_BOT') }}"
+      ludus_rtv_burning_redirectors_slack_signing_secret: "{{ lookup('env','RTV_SLACK_SECRET') }}"
+      ludus_rtv_burning_redirectors_slack_app_token: "{{ lookup('env','RTV_SLACK_APP') }}"
+      ludus_rtv_burning_redirectors_slack_channel: "C0ABCDE124"
+
+# Attendee access: squads SSH to their lab VM (or use the Ludus console). The
+# NightAgents API binds loopback; approvals travel via Slack, so attendees only
+# need Slack on their phones.

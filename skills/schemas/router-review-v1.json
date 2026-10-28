@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["supported", "invariant_failures"],
+  "properties": {
+    "supported": {"type": "boolean"},
+    "invariant_failures": {"type": "array", "items": {"type": "string"}},
+    "plan_id": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

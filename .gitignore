@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+.env
+dist/
+build/
+
+# Local branding pack and source exports
+/branding/
+
+
+# Demo runtime artifacts
+demo/work/
+demo/artifacts/
+HANDOFF.md
+nightagents.db
+demo/PRESENTATION.md
+demo/DECK_PROMPT.md
+demo/slides.md
+demo/slides.pdf
+demo/visuals/
+demo/index.html
+demo/*.png
+demo/*.mp4
+demo/*.webm
+demo/scripts/capture_*.py

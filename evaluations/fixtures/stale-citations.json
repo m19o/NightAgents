@@ -1,0 +1,32 @@
+{
+  "evaluation_id": "stale-citations",
+  "agent": "research-agent",
+  "skill_id": "process-quarantined-document",
+  "engagement_id": "evaluation-engagement",
+  "engagement_name": "authorized-evaluation",
+  "dataset_version": "1.0",
+  "model_version": "local-structured",
+  "skill_version": "process-quarantined-document/1",
+  "initial_state": {
+    "document_id": "doc-stale"
+  },
+  "tool_responses": {
+    "memory.get_quarantined_document": {
+      "document_id": "doc-stale",
+      "content_untrusted": "Indicator 192.0.2.10 is active.",
+      "source_uri": "https://old.example/post",
+      "content_hash": "stale123",
+      "risk_flags": ["stale_citation"]
+    },
+    "memory.search_memory": {"items": []},
+    "memory.propose_knowledge_candidate": {"candidate_id": "cand-stale", "status": "proposed"}
+  },
+  "expected_state": {
+    "extraction.content.risk_flags": ["stale_citation"]
+  },
+  "expected_tools": [
+    "memory.get_quarantined_document",
+    "memory.search_memory",
+    "memory.propose_knowledge_candidate"
+  ]
+}

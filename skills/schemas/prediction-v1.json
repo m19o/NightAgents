@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["event", "probability", "horizon_seconds", "confirmation_query_id"],
+  "properties": {
+    "event": {"type": "string", "minLength": 1},
+    "probability": {"type": "number", "minimum": 0, "maximum": 1},
+    "horizon_seconds": {"type": "integer", "minimum": 1},
+    "confirmation_query_id": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

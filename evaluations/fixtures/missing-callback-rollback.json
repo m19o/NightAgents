@@ -1,0 +1,34 @@
+{
+  "evaluation_id": "missing-callback-rollback",
+  "agent": "nightrouter",
+  "skill_id": "plan-callback-migration",
+  "engagement_id": "evaluation-engagement",
+  "engagement_name": "authorized-evaluation",
+  "dataset_version": "1.0",
+  "model_version": "local-structured",
+  "skill_version": "plan-callback-migration/1",
+  "initial_state": {
+    "engagement_id": "evaluation-engagement",
+    "engagement_name": "authorized-evaluation",
+    "logical_route_id": "route-1",
+    "old_redirector_id": "fixture-old",
+    "new_redirector_id": "fixture-new",
+    "handoff": {
+      "prediction": {"event": "profiling", "probability": 0.7},
+      "evidence": [{"source": "logs-edge"}]
+    }
+  },
+  "tool_responses": {
+    "mythic.list_callbacks": {"status": "success", "callbacks": [{"callback_id": "cb-1", "active": true}]},
+    "infrastructure.route_health": {"healthy": false},
+    "infrastructure.plan_route_switch": {"plan_id": "plan-1"}
+  },
+  "expected_state": {
+    "safety_review.supported": false
+  },
+  "expected_tools": [
+    "mythic.list_callbacks",
+    "infrastructure.route_health",
+    "infrastructure.plan_route_switch"
+  ]
+}

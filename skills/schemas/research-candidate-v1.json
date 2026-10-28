@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["candidate_type", "title", "content", "citations", "confidence"],
+  "properties": {
+    "candidate_type": {"enum": ["DETECTION_QUERY", "KNOWLEDGE_CLAIM"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "content": {"type": "object"},
+    "citations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+galaxy_info:
+  author: m19o
+  description: Deploys the NightAgents redirector-detection teaching lab (Red Team Village tactic)
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags: [security, redteam, blueteam, c2, detection, nightagents, ludus]
+dependencies: []

@@ -1,0 +1,117 @@
+# NightAgents tactic role - tasks
+# Idempotent: safe to re-run on the same VM.
+
+- name: Validate target is Debian-family Linux
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+    fail_msg: This role only supports Debian-family targets (Debian 12 recommended).
+
+- name: Preflight - Mythic C2 must be reachable before we build anything
+  ansible.builtin.uri:
+    url: "{{ ludus_rtv_burning_redirectors_mythic_url }}/"
+    validate_certs: false
+    status_code: [200, 301, 302, 401, 403, 404]
+    timeout: 15
+  register: mythic_probe
+  failed_when: false
+  changed_when: false
+
+- name: Fail loudly if Mythic is unreachable (point at the real Mythic first)
+  ansible.builtin.fail:
+    msg: >
+      Mythic C2 is not reachable at {{ ludus_rtv_burning_redirectors_mythic_url }}
+      (probe returned {{ mythic_probe.status | default('no response') }}).
+      Set ludus_rtv_burning_redirectors_mythic_url to a reachable Mythic before
+      deploying the lab.
+  when: mythic_probe.status is not defined or mythic_probe.status == -1
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: [docker.io, docker-compose-v2, git, curl, python3, openssl, jq]
+    state: present
+    update_cache: true
+
+- name: Ensure docker is enabled
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Create swapfile (freeze protection for Elastic + the stack)
+  ansible.builtin.command:
+    cmd: >
+      sh -c 'fallocate -l {{ ludus_rtv_burning_redirectors_swap_gb }}G /swapfile && chmod 600 /swapfile
+      && mkswap /swapfile && swapon /swapfile'
+  args:
+    creates: /swapfile
+
+- name: Persist swapfile in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+
+- name: Clone the NightAgents tactic package
+  ansible.builtin.git:
+    repo: "{{ ludus_rtv_burning_redirectors_repo_url }}"
+    dest: "{{ ludus_rtv_burning_redirectors_repo_dir }}"
+    version: "{{ ludus_rtv_burning_redirectors_repo_version }}"
+    force: true
+
+- name: Render .env from the squad template
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ ludus_rtv_burning_redirectors_repo_dir }}/.env"
+    mode: "0600"
+
+- name: Build the NightAgents image (host network for registry reliability)
+  ansible.builtin.command:
+    cmd: docker build --network=host -q -t nightagents-api:latest .
+    chdir: "{{ ludus_rtv_burning_redirectors_repo_dir }}"
+  changed_when: false
+
+- name: Tag service images
+  ansible.builtin.command:
+    cmd: docker tag nightagents-api:latest nightagents-{{ item }}:latest
+  loop: [worker, elastic-mcp, infrastructure-mcp, memory-mcp, migrate, mythic-mcp, third-party-mcp]
+  changed_when: false
+
+- name: Start the NightAgents control plane
+  ansible.builtin.command:
+    cmd: docker compose --env-file .env up -d
+    chdir: "{{ ludus_rtv_burning_redirectors_repo_dir }}"
+  changed_when: false
+
+- name: Wait for the control plane to become ready
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8000/health/ready
+    return_content: true
+  register: ready
+  retries: 40
+  delay: 5
+  until: ready.json.ready | default(false)
+
+- name: Provision the lab (payload, redirector fleet, implant)
+  ansible.builtin.command:
+    cmd: bash demo/scripts/lab_provision.sh
+    chdir: "{{ ludus_rtv_burning_redirectors_repo_dir }}"
+  changed_when: false
+
+- name: Verify Slack delivery for the squad
+  ansible.builtin.command:
+    cmd: >
+      python3 demo/scripts/slack_setup.py
+      --bot-token '{{ ludus_rtv_burning_redirectors_slack_bot_token }}'
+      --signing-secret '{{ ludus_rtv_burning_redirectors_slack_signing_secret }}'
+      --channel '{{ ludus_rtv_burning_redirectors_slack_channel }}'
+      --no-restart
+    chdir: "{{ ludus_rtv_burning_redirectors_repo_dir }}"
+  changed_when: false
+  no_log: true  # command line carries the squad bot token and signing secret
+
+- name: "Cron: refresh the Mythic API token every 3 hours"
+  ansible.builtin.cron:
+    name: "nightagents mythic token refresh ({{ ludus_rtv_burning_redirectors_squad }})"
+    minute: "17"
+    hour: "*/3"
+    job: "cd {{ ludus_rtv_burning_redirectors_repo_dir }} && python3 demo/scripts/run_demo.py --setup-only >> /var/log/nightagents-refresh.log 2>&1"

@@ -1,0 +1,40 @@
+{
+  "evaluation_id": "delayed-callback",
+  "agent": "nightrouter",
+  "skill_id": "verify-callback-continuity",
+  "engagement_id": "evaluation-engagement",
+  "engagement_name": "authorized-evaluation",
+  "dataset_version": "1.0",
+  "model_version": "local-structured",
+  "skill_version": "verify-callback-continuity/1",
+  "initial_state": {
+    "engagement_id": "evaluation-engagement",
+    "engagement_name": "authorized-evaluation",
+    "route_id": "fixture-new",
+    "callback_ids": [
+      "cb-1",
+      "cb-2"
+    ]
+  },
+  "tool_responses": {
+    "infrastructure.route_health": {
+      "status": "healthy"
+    },
+    "infrastructure.verify_callback_route": {
+      "status": "partial",
+      "callbacks": [
+        {
+          "callback_id": "cb-1",
+          "last_checkin_seconds": 30
+        }
+      ]
+    }
+  },
+  "expected_state": {
+    "continuity_assessment.supported": false
+  },
+  "expected_tools": [
+    "infrastructure.verify_callback_route",
+    "infrastructure.route_health"
+  ]
+}

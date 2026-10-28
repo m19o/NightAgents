@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "queries"
+  ],
+  "properties": {
+    "queries": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "query_id",
+          "parameters",
+          "rationale"
+        ],
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "description": "A query id from the elastic query catalog. The catalog is the allowlist."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Catalog-bounded parameters (lookback_seconds, size, redirector_id, index)."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this query, grounded in the hunting playbook."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

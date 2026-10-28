@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["supported", "unknowns", "negative_evidence_status"],
+  "properties": {
+    "supported": {"type": "boolean"},
+    "unknowns": {"type": "array", "items": {"type": "string"}},
+    "negative_evidence_status": {"enum": ["verified", "invalid", "unknown"]}
+  },
+  "additionalProperties": false
+}

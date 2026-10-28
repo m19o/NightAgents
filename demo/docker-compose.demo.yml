@@ -1,0 +1,122 @@
+# NightAgents live demo: victim + redirection techniques.
+# Runs alongside (not inside) the main docker-compose.yml stack.
+name: nightagents-demo
+
+networks:
+  demo:
+    driver: bridge
+  nightagents:
+    external: true
+    name: nightagents_default
+
+volumes:
+  redirector-logs:
+  payload-share:
+
+services:
+  redirector-pass:
+    container_name: redirector-pass
+    hostname: redirector-pass
+    image: nginx:1.27-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/00-log-format.conf:/etc/nginx/conf.d/00-log-format.conf:ro
+      - ./nginx/pass.conf:/etc/nginx/conf.d/pass.conf:ro
+      - redirector-logs:/redirector-logs
+    networks:
+      demo:
+        aliases:
+          - redirector-pass.demo
+
+  redirector-filter:
+    container_name: redirector-filter
+    hostname: redirector-filter
+    image: nginx:1.27-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/00-log-format.conf:/etc/nginx/conf.d/00-log-format.conf:ro
+      - ./nginx/filter.conf:/etc/nginx/conf.d/filter.conf:ro
+      - redirector-logs:/redirector-logs
+    networks:
+      demo:
+        aliases:
+          - redirector-filter.demo
+
+  redirector-front:
+    container_name: redirector-front
+    hostname: redirector-front
+    image: nginx:1.27-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/00-log-format.conf:/etc/nginx/conf.d/00-log-format.conf:ro
+      - ./nginx/front.conf:/etc/nginx/conf.d/front.conf:ro
+      - ./nginx/decoy.html:/usr/share/nginx/html/decoy.html:ro
+      - redirector-logs:/redirector-logs
+    networks:
+      demo:
+        aliases:
+          - weather-front.demo
+          - cdn-metrics.demo
+
+  redirector-ab:
+    container_name: redirector-ab
+    hostname: redirector-ab
+    image: nginx:1.27-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/00-log-format.conf:/etc/nginx/conf.d/00-log-format.conf:ro
+      - ./nginx/ab.conf:/etc/nginx/conf.d/ab.conf:ro
+      - redirector-logs:/redirector-logs
+    networks:
+      demo:
+        aliases:
+          - redirector-ab.demo
+
+  victim:
+    container_name: victim
+    hostname: victim
+    image: debian:12-slim
+    command: ["sleep", "infinity"]
+    volumes:
+      - payload-share:/payload
+    networks:
+      - demo
+
+  shipper:
+    image: python:3.12-slim
+    command: ["python", "/opt/shipper.py"]
+    environment:
+      NIGHTAGENTS_DEMO_ES_URL: http://elasticsearch:9200
+    volumes:
+      - ./scripts/shipper.py:/opt/shipper.py:ro
+      - ./work:/shipper-config
+      - redirector-logs:/redirector-logs:ro
+    networks:
+      - demo
+      - nightagents
+
+  thirdparty-feed:
+    image: python:3.12-slim
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /certs
+        openssl req -x509 -newkey rsa:2048 -nodes \
+          -keyout /certs/key.pem -out /certs/cert.pem \
+          -days 365 -subj "/CN=intel-feed.demo" 2>/dev/null
+        python /opt/thirdparty_feed.py
+    volumes:
+      - ./scripts/thirdparty_feed.py:/opt/thirdparty_feed.py:ro
+    networks:
+      demo:
+        aliases:
+          - intel-feed.demo
+      nightagents:
+        aliases:
+          - intel-feed.demo
+

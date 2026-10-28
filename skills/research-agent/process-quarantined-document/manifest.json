@@ -1,0 +1,81 @@
+{
+  "skill_id": "process-quarantined-document",
+  "version": 1,
+  "agent": "research-agent",
+  "tools": [
+    "memory.get_quarantined_document",
+    "memory.search_memory",
+    "memory.propose_knowledge_candidate"
+  ],
+  "maximum_tool_calls": 6,
+  "maximum_context_tokens": 8000,
+  "evaluation_ids": [
+    "prompt-injection",
+    "citation-binding",
+    "no-auto-promotion"
+  ],
+  "status": "active",
+  "phases": [
+    {
+      "node": "document",
+      "kind": "tool",
+      "tool": "memory.get_quarantined_document",
+      "arguments": {
+        "document_id": "${document_id}"
+      },
+      "timeout_seconds": 60
+    },
+    {
+      "node": "extraction",
+      "kind": "model",
+      "model_role": "researcher",
+      "context_keys": [
+        "document"
+      ],
+      "output_schema": "research-candidate-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    },
+    {
+      "node": "conflicts",
+      "kind": "tool",
+      "tool": "memory.search_memory",
+      "arguments": {
+        "query": "${extraction.title}",
+        "memory_types": [
+          "semantic"
+        ],
+        "limit": 5
+      },
+      "timeout_seconds": 60
+    },
+    {
+      "node": "conflict_review",
+      "kind": "model",
+      "model_role": "research_critic",
+      "context_keys": [
+        "extraction",
+        "conflicts"
+      ],
+      "output_schema": "research-conflict-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    },
+    {
+      "node": "candidate",
+      "kind": "tool",
+      "tool": "memory.propose_knowledge_candidate",
+      "arguments": {
+        "document_id": "${document_id}",
+        "candidate_type": "${extraction.candidate_type}",
+        "title": "${extraction.title}",
+        "content": "${extraction.content}",
+        "citations": "${extraction.citations}",
+        "confidence": "${extraction.confidence}",
+        "conflict_review": "${conflict_review}"
+      },
+      "timeout_seconds": 60
+    }
+  ],
+  "deadline_seconds": 600
+}

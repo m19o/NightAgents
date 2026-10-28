@@ -1,0 +1,30 @@
+{
+  "evaluation_id": "source-health-gate",
+  "agent": "nightwatcher",
+  "skill_id": "investigate-elastic-incident",
+  "engagement_id": "evaluation-engagement",
+  "engagement_name": "authorized-evaluation",
+  "initial_state": {
+    "engagement_id": "evaluation-engagement",
+    "engagement_name": "authorized-evaluation",
+    "external_alert_id": "fixture-alert",
+    "redirector_id": "fixture-edge",
+    "required_sources": ["logs-edge"]
+  },
+  "tool_responses": {
+    "elastic.get_source_health": {"logs-edge": {"status": "healthy"}},
+    "elastic.get_incident": {"status": "success", "events": [{"_id": "alert-1"}]},
+    "elastic.run_catalog_query": {"status": "success", "events": [{"_id": "event-1", "message": "profiling"}]},
+    "mythic.list_callbacks": {"status": "success", "callbacks": []}
+  },
+  "expected_state": {
+    "verification.supported": true,
+    "verification.negative_evidence_status": "verified"
+  },
+  "expected_tools": [
+    "elastic.get_source_health",
+    "elastic.get_incident",
+    "elastic.run_catalog_query",
+    "mythic.list_callbacks"
+  ]
+}

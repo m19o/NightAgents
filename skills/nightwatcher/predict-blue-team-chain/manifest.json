@@ -1,0 +1,73 @@
+{
+  "skill_id": "predict-blue-team-chain",
+  "version": 1,
+  "agent": "nightwatcher",
+  "tools": [
+    "memory.search_memory",
+    "elastic.run_catalog_query"
+  ],
+  "maximum_tool_calls": 12,
+  "maximum_context_tokens": 32000,
+  "evaluation_ids": [
+    "phase-replay",
+    "calibration"
+  ],
+  "status": "active",
+  "phases": [
+    {
+      "node": "memory",
+      "kind": "tool",
+      "tool": "memory.search_memory",
+      "arguments": {
+        "query": "${summary}",
+        "engagement_id": "${engagement_id}",
+        "limit": 8
+      },
+      "timeout_seconds": 60
+    },
+    {
+      "node": "reasoning",
+      "kind": "model",
+      "model_role": "reasoner",
+      "context_keys": [
+        "incident",
+        "elastic_evidence",
+        "callback_inventory",
+        "verification",
+        "memory"
+      ],
+      "output_schema": "reasoning-assessment-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    },
+    {
+      "node": "prediction",
+      "kind": "model",
+      "model_role": "predictor",
+      "context_keys": [
+        "incident",
+        "reasoning",
+        "elastic_evidence",
+        "memory"
+      ],
+      "output_schema": "prediction-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    },
+    {
+      "node": "critique",
+      "kind": "model",
+      "model_role": "critic",
+      "context_keys": [
+        "reasoning",
+        "prediction",
+        "verification",
+        "elastic_evidence"
+      ],
+      "output_schema": "critic-v1",
+      "timeout_seconds": 60,
+      "maximum_attempts": 2
+    }
+  ],
+  "deadline_seconds": 600
+}
